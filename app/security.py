@@ -14,7 +14,7 @@ from .config import get_settings
 _bearer_scheme = HTTPBearer(auto_error=False)
 
 
-def issue_token(sub: str, expires_in: int = 3600) -> str:
+def issue_token(sub: str, exp_seconds: int = 3600) -> str:
     """Issue a signed JWT for the given subject."""
 
     settings = get_settings()
@@ -24,7 +24,7 @@ def issue_token(sub: str, expires_in: int = 3600) -> str:
         "iss": settings.jwt_issuer,
         "aud": settings.jwt_audience,
         "iat": int(now.timestamp()),
-        "exp": int((now + timedelta(seconds=expires_in)).timestamp()),
+        "exp": int((now + timedelta(seconds=exp_seconds)).timestamp()),
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm="HS256")
 
@@ -48,9 +48,11 @@ def require_bearer(
             audience=settings.jwt_audience,
             issuer=settings.jwt_issuer,
         )
-    except (
-        jwt.PyJWTError
-    ) as exc:  # pragma: no cover - specific error branches covered generically
+    except jwt.ExpiredSignatureError as exc:  # pragma: no cover - defensive
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired"
+        ) from exc
+    except jwt.PyJWTError as exc:  # pragma: no cover - defensive
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         ) from exc
