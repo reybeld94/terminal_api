@@ -36,3 +36,33 @@ docker compose up --build
 ```
 
 La API quedará disponible en `http://localhost:8000`.
+
+## Ejemplos con cURL
+
+```bash
+# Clock-in
+curl -X POST http://localhost:8000/clock-in \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "workOrderAssemblyId": 1,
+    "userId": 42,
+    "divisionFK": 7,
+    "deviceDate": "2024-01-01T08:00:00"
+  }'
+
+# Clock-out
+curl -X POST http://localhost:8000/clock-out \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "workOrderCollectionId": 123,
+    "quantity": 10,
+    "quantityScrapped": 0,
+    "scrapReasonPK": 1,
+    "complete": true,
+    "comment": "Proceso finalizado",
+    "deviceTime": "2024-01-01T12:00:00",
+    "divisionFK": 7
+  }'
+```
