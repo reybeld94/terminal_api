@@ -27,6 +27,22 @@ Edita `.env` con las credenciales reales.
 - `make lint`: ejecuta `ruff`.
 - `make fmt`: formatea con `black` e `isort`.
 
+## Logs
+
+El middleware de la aplicación imprime un log JSON por cada request en `stdout` con los
+campos `time`, `level`, `request_id`, `method`, `path`, `status_code` y `latency_ms`.
+Puedes verlos ejecutando la API de manera interactiva:
+
+```bash
+make run
+```
+
+o siguiendo los logs del contenedor si usas Docker:
+
+```bash
+docker compose logs -f
+```
+
 ## Docker
 
 Construir y ejecutar la API:

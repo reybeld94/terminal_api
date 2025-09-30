@@ -3,23 +3,23 @@
 from __future__ import annotations
 
 import json
-import logging
 import time
+import traceback
 import uuid
+from datetime import datetime, timezone
 from typing import Callable
 
 from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 
 from .routers import clock
 
-_logger = logging.getLogger("terminal_api")
-if not _logger.handlers:
-    handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter("%(message)s"))
-    _logger.addHandler(handler)
-_logger.setLevel(logging.INFO)
+
+def _now_iso() -> str:
+    """Return the current UTC time formatted in ISO 8601."""
+
+    return datetime.now(tz=timezone.utc).isoformat()
 
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
@@ -30,20 +30,42 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         request_id = str(uuid.uuid4())
         request.state.request_id = request_id
-        start_time = time.time()
+        start_time = time.perf_counter()
 
-        response = await call_next(request)
-        process_time = time.time() - start_time
+        try:
+            response = await call_next(request)
+        except Exception:  # pragma: no cover - defensive guard
+            response = JSONResponse(
+                {"detail": "Internal Server Error"}, status_code=500
+            )
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            log_payload = {
+                "time": _now_iso(),
+                "level": "ERROR",
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "latency_ms": latency_ms,
+                "error": traceback.format_exc(limit=3).strip(),
+            }
+            print(json.dumps(log_payload), flush=True)
+            response.headers["X-Request-ID"] = request_id
+            return response
+
+        latency_ms = (time.perf_counter() - start_time) * 1000
         response.headers["X-Request-ID"] = request_id
 
         log_payload = {
+            "time": _now_iso(),
+            "level": "INFO",
             "request_id": request_id,
-            "path": request.url.path,
             "method": request.method,
+            "path": request.url.path,
             "status_code": response.status_code,
-            "process_time": process_time,
+            "latency_ms": latency_ms,
         }
-        _logger.info(json.dumps(log_payload))
+        print(json.dumps(log_payload), flush=True)
 
         return response
 
