@@ -1,45 +1,38 @@
-# MIE Trak Terminal API
+# Terminal API
 
-API REST minimalista construida con FastAPI para orquestar los Stored Procedures de MIE Trak necesarios para registrar entradas y salidas de órdenes de trabajo.
+Proyecto FastAPI minimalista para gestionar el fichaje de órdenes de trabajo.
 
 ## Requisitos
 
 - Python 3.11
-- SQL Server accesible mediante `pymssql`
-- Variables de entorno definidas (`.env`)
+- [Poetry](https://python-poetry.org/) no es necesario; se usa `venv` estándar
+- Docker (opcional)
 
-## Configuración
-
-1. Copia `.env.example` a `.env` y ajusta los valores según tu entorno.
-2. Instala las dependencias:
+## Configuración local
 
 ```bash
-make install
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
 ```
 
-## Ejecución local
+Edita `.env` con las credenciales reales.
 
-```bash
-make run
-```
+## Comandos Make
 
-El servicio quedará disponible en `http://localhost:8000`. La documentación interactiva se encuentra en `/docs` y el esquema OpenAPI en `/openapi.json`.
-
-## Pruebas
-
-```bash
-make test
-```
+- `make install`: instala dependencias en el entorno activo.
+- `make run`: levanta la API en `http://127.0.0.1:8000`.
+- `make test`: ejecuta la suite de tests con `pytest`.
+- `make lint`: ejecuta `ruff`.
+- `make fmt`: formatea con `black` e `isort`.
 
 ## Docker
 
-Construye la imagen y levanta el contenedor:
+Construir y ejecutar la API:
 
 ```bash
-docker build -t mie-terminal-api .
-docker run --env-file .env -p 8000:8000 mie-terminal-api
+docker compose up --build
 ```
 
-## Licencia
-
-Distribuido bajo la licencia MIT. Consulta el archivo [LICENSE](LICENSE).
+La API quedará disponible en `http://localhost:8000`.

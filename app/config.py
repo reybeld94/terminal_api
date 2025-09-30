@@ -1,12 +1,21 @@
+"""Application configuration module."""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
 from functools import lru_cache
+from typing import Optional
 
 from dotenv import load_dotenv
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
 
 
-class Settings(BaseSettings):
+@dataclass(frozen=True)
+class Settings:
+    """Runtime configuration loaded from environment variables."""
+
     db_server: str
     db_user: str
     db_password: str
@@ -15,13 +24,29 @@ class Settings(BaseSettings):
     jwt_audience: str
     jwt_issuer: str
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-    )
+    @classmethod
+    def from_env(cls) -> "Settings":
+        """Build settings using environment variables."""
+
+        def read(key: str, default: Optional[str] = None) -> str:
+            value = os.getenv(key, default)
+            if value is None:
+                raise RuntimeError(f"Missing required environment variable: {key}")
+            return value
+
+        return cls(
+            db_server=read("DB_SERVER", ""),
+            db_user=read("DB_USER", ""),
+            db_password=read("DB_PASSWORD", ""),
+            db_name=read("DB_NAME", ""),
+            jwt_secret=read("JWT_SECRET", ""),
+            jwt_audience=read("JWT_AUDIENCE", ""),
+            jwt_issuer=read("JWT_ISSUER", ""),
+        )
 
 
-@lru_cache
+@lru_cache()
 def get_settings() -> Settings:
-    return Settings()
+    """Return a cached settings instance."""
+
+    return Settings.from_env()
