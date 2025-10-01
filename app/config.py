@@ -20,9 +20,6 @@ class Settings:
     db_user: str
     db_password: str
     db_name: str
-    jwt_secret: str
-    jwt_audience: str
-    jwt_issuer: str
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -39,9 +36,6 @@ class Settings:
             db_user=read("DB_USER", ""),
             db_password=read("DB_PASSWORD", ""),
             db_name=read("DB_NAME", ""),
-            jwt_secret=read("JWT_SECRET", ""),
-            jwt_audience=read("JWT_AUDIENCE", ""),
-            jwt_issuer=read("JWT_ISSUER", ""),
         )
 
 

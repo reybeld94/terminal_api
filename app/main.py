@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import time
 import traceback
 import uuid
@@ -15,7 +14,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse, Response
 
 from .routers import clock
-from .security import issue_token
 
 
 def _now_iso() -> str:
@@ -78,14 +76,6 @@ def create_app() -> FastAPI:
     application = FastAPI()
     application.add_middleware(RequestIdMiddleware)
     application.include_router(clock.router)
-
-    if os.getenv("ENV") == "dev":
-
-        @application.get("/dev/token")
-        def dev_token() -> dict[str, str]:
-            """Return a short-lived development token."""
-
-            return {"token": issue_token("dev-user")}
 
     return application
 
