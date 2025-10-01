@@ -21,7 +21,7 @@ router = APIRouter(prefix="", tags=["user"])
 _USER_QUERY = """
 SELECT UserPK, FirstName, LastName
 FROM dbo.[User]
-WHERE UserPK = %s
+WHERE Code = %s
 """
 
 
@@ -57,14 +57,14 @@ def _safe_get(row: Optional[dict[str, object]], key: str) -> Optional[object]:
     return row.get(key)
 
 
-@router.get("/users/{user_id}", response_model=UserStatusResponse)
-def get_user_status(user_id: int) -> UserStatusResponse:
+@router.get("/users/{employee_id}", response_model=UserStatusResponse)
+def get_user_status(employee_id: str) -> UserStatusResponse:
     """Validate a user exists and return their active work order information."""
 
     try:
         with closing(get_conn()) as conn:
             with conn.cursor(as_dict=True) as cursor:
-                cursor.execute(_USER_QUERY, (user_id,))
+                cursor.execute(_USER_QUERY, (employee_id,))
                 user_row = cursor.fetchone()
 
                 if not user_row:
@@ -73,7 +73,9 @@ def get_user_status(user_id: int) -> UserStatusResponse:
                         detail="USER_NOT_FOUND",
                     )
 
-                cursor.execute(_ACTIVE_WORK_ORDER_QUERY, (user_id,))
+                cursor.execute(
+                    _ACTIVE_WORK_ORDER_QUERY, (user_row["UserPK"],)
+                )
                 work_order_row = cursor.fetchone()
     except pymssql.Error as exc:  # pragma: no cover - requires live DB
         _logger.exception("Database error while fetching user status")
