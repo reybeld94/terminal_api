@@ -8,7 +8,7 @@ import logging
 from typing import Optional
 
 import pymssql
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 
 from ..db import get_conn
 from ..schemas import (
@@ -17,12 +17,10 @@ from ..schemas import (
     ClockOutRequest,
     ClockOutResponse,
 )
-from ..security import require_bearer
-
 _logger = logging.getLogger(__name__)
 
 
-router = APIRouter(prefix="", tags=["clock"], dependencies=[Depends(require_bearer)])
+router = APIRouter(prefix="", tags=["clock"])
 
 
 def _extract_status(row: Optional[dict[str, object]]) -> str:
