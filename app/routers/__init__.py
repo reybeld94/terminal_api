@@ -1,5 +1,5 @@
 """Routers package."""
 
-from . import clock
+from . import clock, user
 
-__all__ = ["clock"]
+__all__ = ["clock", "user"]

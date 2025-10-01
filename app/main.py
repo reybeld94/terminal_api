@@ -13,7 +13,7 @@ from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse, Response
 
-from .routers import clock
+from .routers import clock, user
 
 
 def _now_iso() -> str:
@@ -76,6 +76,7 @@ def create_app() -> FastAPI:
     application = FastAPI()
     application.add_middleware(RequestIdMiddleware)
     application.include_router(clock.router)
+    application.include_router(user.router)
 
     return application
 

@@ -44,3 +44,24 @@ class ClockOutResponse(BaseModel):
     status: str
 
     model_config = {"populate_by_name": True}
+
+
+class UserStatusResponse(BaseModel):
+    user_id: int = Field(alias="userId")
+    first_name: str = Field(alias="firstName")
+    last_name: str = Field(alias="lastName")
+    work_order_collection_id: Optional[int] = Field(
+        default=None, alias="workOrderCollectionId"
+    )
+    work_order_number: Optional[str] = Field(
+        default=None, alias="workOrderNumber"
+    )
+    work_order_assembly_number: Optional[int] = Field(
+        default=None, alias="workOrderAssemblyNumber"
+    )
+    clock_in_time: Optional[datetime] = Field(default=None, alias="clockInTime")
+    part_number: Optional[str] = Field(default=None, alias="partNumber")
+    operation_code: Optional[str] = Field(default=None, alias="operationCode")
+    operation_name: Optional[str] = Field(default=None, alias="operationName")
+
+    model_config = {"populate_by_name": True}
