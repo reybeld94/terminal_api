@@ -64,8 +64,10 @@ def get_user_status(employee_id: str) -> UserStatusResponse:
     try:
         with closing(get_conn()) as conn:
             with conn.cursor(as_dict=True) as cursor:
+                print("[DEBUG] Executing user query:", _USER_QUERY.strip(), "| params:", (employee_id,))
                 cursor.execute(_USER_QUERY, (employee_id,))
                 user_row = cursor.fetchone()
+                print("[DEBUG] User query result:", user_row)
 
                 if not user_row:
                     raise HTTPException(
