@@ -41,14 +41,30 @@ def clock_in(payload: ClockInRequest) -> ClockInResponse:
     try:
         with closing(get_conn()) as conn:
             with conn.cursor(as_dict=True) as cursor:
-                cursor.callproc(
-                    "dbo.usp_mie_api_ClockInWorkOrderAssembly",
-                    (
-                        payload.work_order_assembly_id,
-                        payload.user_id,
-                        payload.division_fk,
-                        device_date,
+                sp_name = "dbo.usp_mie_api_ClockInWorkOrderAssembly"
+                sp_params = (
+                    payload.work_order_assembly_id,
+                    payload.user_id,
+                    payload.division_fk,
+                    device_date,
+                )
+                param_names = (
+                    "work_order_assembly_id",
+                    "user_id",
+                    "division_fk",
+                    "device_date",
+                )
+                _logger.debug(
+                    "Calling %s with params: %s",
+                    sp_name,
+                    ", ".join(
+                        f"{name}={value!r} (type={type(value).__name__})"
+                        for name, value in zip(param_names, sp_params)
                     ),
+                )
+                cursor.callproc(
+                    sp_name,
+                    sp_params,
                 )
                 sp_status = _extract_status(cursor.fetchone())
                 # Ensure all result sets are consumed before the next query.
