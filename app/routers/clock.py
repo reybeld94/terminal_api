@@ -11,6 +11,7 @@ import pymssql
 from fastapi import APIRouter, HTTPException, status
 
 from ..db import get_conn
+from ..logging_utils import get_request_id, log_json
 from ..schemas import (
     ClockInRequest,
     ClockInResponse,
@@ -54,19 +55,35 @@ def clock_in(payload: ClockInRequest) -> ClockInResponse:
                     "division_fk",
                     "device_date",
                 )
-                _logger.debug(
-                    "Calling %s with params: %s",
-                    sp_name,
-                    ", ".join(
-                        f"{name}={value!r} (type={type(value).__name__})"
-                        for name, value in zip(param_names, sp_params)
-                    ),
+                log_json(
+                    {
+                        "level": "INFO",
+                        "event": "stored_procedure.call",
+                        "request_id": get_request_id(),
+                        "name": sp_name,
+                        "params": {
+                            name: value for name, value in zip(param_names, sp_params)
+                        },
+                    }
                 )
                 cursor.callproc(
                     sp_name,
                     sp_params,
                 )
                 sp_status = _extract_status(cursor.fetchone())
+                if not sp_status:
+                    log_json(
+                        {
+                            "level": "ERROR",
+                            "event": "stored_procedure.empty_status",
+                            "request_id": get_request_id(),
+                            "name": sp_name,
+                        }
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="DB_ERROR",
+                    )
                 # Ensure all result sets are consumed before the next query.
                 while cursor.nextset():
                     pass
@@ -93,6 +110,16 @@ def clock_in(payload: ClockInRequest) -> ClockInResponse:
             detail="DB_ERROR",
         ) from exc
 
+    log_json(
+        {
+            "level": "INFO",
+            "event": "stored_procedure.result",
+            "request_id": get_request_id(),
+            "name": "dbo.usp_mie_api_ClockInWorkOrderAssembly",
+            "status": sp_status,
+        }
+    )
+
     return ClockInResponse(
         status=sp_status, work_order_collection_id=work_order_collection_id
     )
@@ -107,20 +134,53 @@ def clock_out(payload: ClockOutRequest) -> ClockOutResponse:
     try:
         with closing(get_conn()) as conn:
             with conn.cursor(as_dict=True) as cursor:
+                sp_name = "dbo.usp_mie_api_ClockOutWorkOrderCollection"
+                sp_params = (
+                    payload.work_order_collection_id,
+                    payload.quantity,
+                    payload.quantity_scrapped,
+                    payload.scrap_reason_pk,
+                    int(payload.complete),
+                    payload.comment,
+                    device_time_str,
+                    payload.division_fk,
+                )
+                log_json(
+                    {
+                        "level": "INFO",
+                        "event": "stored_procedure.call",
+                        "request_id": get_request_id(),
+                        "name": sp_name,
+                        "params": {
+                            "work_order_collection_id": payload.work_order_collection_id,
+                            "quantity": payload.quantity,
+                            "quantity_scrapped": payload.quantity_scrapped,
+                            "scrap_reason_pk": payload.scrap_reason_pk,
+                            "complete": int(payload.complete),
+                            "comment": payload.comment,
+                            "device_time": device_time_str,
+                            "division_fk": payload.division_fk,
+                        },
+                    }
+                )
                 cursor.callproc(
-                    "dbo.usp_mie_api_ClockOutWorkOrderCollection",
-                    (
-                        payload.work_order_collection_id,
-                        payload.quantity,
-                        payload.quantity_scrapped,
-                        payload.scrap_reason_pk,
-                        int(payload.complete),
-                        payload.comment,
-                        device_time_str,
-                        payload.division_fk,
-                    ),
+                    sp_name,
+                    sp_params,
                 )
                 sp_status = _extract_status(cursor.fetchone())
+                if not sp_status:
+                    log_json(
+                        {
+                            "level": "ERROR",
+                            "event": "stored_procedure.empty_status",
+                            "request_id": get_request_id(),
+                            "name": sp_name,
+                        }
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="DB_ERROR",
+                    )
                 while cursor.nextset():
                     pass
 
@@ -131,5 +191,15 @@ def clock_out(payload: ClockOutRequest) -> ClockOutResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="DB_ERROR",
         ) from exc
+
+    log_json(
+        {
+            "level": "INFO",
+            "event": "stored_procedure.result",
+            "request_id": get_request_id(),
+            "name": "dbo.usp_mie_api_ClockOutWorkOrderCollection",
+            "status": sp_status,
+        }
+    )
 
     return ClockOutResponse(status=sp_status)
