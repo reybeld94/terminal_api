@@ -10,6 +10,7 @@ import pymssql
 from fastapi import APIRouter, HTTPException, status
 
 from ..db import get_conn
+from ..logging_utils import get_request_id, log_json
 from ..schemas import UserStatusResponse
 
 _logger = logging.getLogger(__name__)
@@ -64,10 +65,26 @@ def get_user_status(employee_id: str) -> UserStatusResponse:
     try:
         with closing(get_conn()) as conn:
             with conn.cursor(as_dict=True) as cursor:
-                print("[DEBUG] Executing user query:", _USER_QUERY.strip(), "| params:", (employee_id,))
+                log_json(
+                    {
+                        "level": "INFO",
+                        "event": "user.lookup",
+                        "request_id": get_request_id(),
+                        "query": "USER_BY_CODE",
+                        "params": {"code": employee_id},
+                    }
+                )
                 cursor.execute(_USER_QUERY, (employee_id,))
                 user_row = cursor.fetchone()
-                print("[DEBUG] User query result:", user_row)
+                log_json(
+                    {
+                        "level": "INFO",
+                        "event": "user.lookup.result",
+                        "request_id": get_request_id(),
+                        "query": "USER_BY_CODE",
+                        "result": bool(user_row),
+                    }
+                )
 
                 if not user_row:
                     raise HTTPException(
